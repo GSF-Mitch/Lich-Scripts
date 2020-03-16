@@ -1,0 +1,192 @@
+pen = "stylus"
+book = "volume"
+resting_room = 20239
+earth = true
+abbreviate = false
+first = false
+
+
+if !UserVars.journal
+  UserVars.journal = Hash.new
+  UserVars.journal["today"] = Hash.new
+  UserVars.journal["today"]["exp"] = 0
+  UserVars.journal["today"]["fame"] = 0
+  UserVars.journal["today"]["bounty"] = 0
+  UserVars.journal["today"]["silver"] = 0
+  UserVars.journal["yesterday"] = Hash.new
+  UserVars.journal["yesterday"]["exp"] = 0
+  UserVars.journal["yesterday"]["fame"] = 0
+  UserVars.journal["yesterday"]["bounty"] = 0
+  UserVars.journal["yesterday"]["silver"] = 0
+  UserVars.journal["day"] = "poop"
+  UserVars.journal["page"] = 1
+  first = true
+end
+
+fput "time"
+timeline = matchtimeout 2, "Today is"
+if timeline =~ /Today is (.*)\, day (.*) of the month (.*) in the year (.*)\.  It is (.*) by the elven time standard/
+  gsday = $1
+  date = $2.to_i
+  gsmonth = $3
+  gsyear = $4.to_i
+  year = gsyear -= 3100
+  time = $5
+  if gsday == "Restday"
+    day = "Sunday"
+  elsif gsday == "Volnes"
+    day = "Monday"
+  elsif gsday == "Tilamaires"
+    day = "Tuesday"
+  elsif gsday == "Leyan"
+    day = "Wednesday"
+  elsif gsday == "Niiman"
+    day = "Thursday"
+  elsif gsday == "Day of the Huntress"
+    day = "Friday"
+  elsif gsday == "Feastday"
+    day = "Saturday"
+  end
+  if UserVars.journal["day"] != day
+    UserVars.journal["day"] = day
+    UserVars.journal["yesterday"]["exp"] = UserVars.journal["today"]["exp"]
+    UserVars.journal["yesterday"]["fame"] = UserVars.journal["today"]["fame"]
+    UserVars.journal["yesterday"]["bounty"] = UserVars.journal["today"]["bounty"]
+    UserVars.journal["yesterday"]["silver"] = UserVars.journal["today"]["silver"]
+    oldexp = UserVars.journal["yesterday"]["exp"]
+    oldfame = UserVars.journal["yesterday"]["fame"]
+    oldbounty = UserVars.journal["yesterday"]["bounty"]
+    oldsilver = UserVars.journal["yesterday"]["silver"]
+  else
+    exit
+  end
+  if gsmonth == "Lormesta"
+    month = "January"
+    month_num = "1"
+	elsif gsmonth == "Fashanos"
+    month = "February"
+    month_num = "3"
+	elsif gsmonth == 	"Charlatos"
+    month = "March"
+    month_num = "3"
+	elsif gsmonth == 	"Olaesta"
+    month = "April"
+    month_num = "4"
+	elsif gsmonth == 	"Ivastaen"
+    month = "May"
+    month_num = "5"
+	elsif gsmonth == 	"Lumnea"
+    month = "June"
+    month_num = "6"
+	elsif gsmonth == 	"Koaratos"
+    month = "July"
+    month_num = "7"
+	elsif gsmonth == 	"Phoenatos"
+    month = "August"
+    month_num = "8"
+	elsif gsmonth == 	"Imaerasta"
+    month = "September"
+    month_num = "9"
+	elsif gsmonth == 	"Jastatos"
+    month = "October"
+    month_num = "10"
+	elsif gsmonth == 	"Eoantos"
+    month = "November"
+    month_num = "11"
+	elsif gsmonth == 	"Eorgaen"
+    month = "December"
+    month_num = "12"
+  end
+  if date == 1
+    suffix = "st"
+  elsif date == 21
+    suffix = "st"
+  elsif date == 31
+    suffix = "st"
+  elsif date == 2
+    suffix = "nd"
+  elsif date == 22
+    suffix == "nd"
+  elsif date == 3
+    suffix = "rd"
+  elsif date == 23
+    suffix = "rd"
+  else
+    suffix = "th"
+  end
+end
+
+fput "info"
+expr = matchtimeout 2, "Expr"
+if expr =~ /Expr: (.*)    Level/
+  exp = $1.to_i
+end
+fput "fame"
+fam = matchtimeout 2, "personal fame is"
+if fam =~ /fame is (.*)./
+  fame = $1.to_i
+end
+fput "bounty"
+bount = matchtimeout 2, "You have"
+if bount =~ /You have accumulated a total of (.*) lifetime bounty points./
+  bounty = $1.to_i
+end
+fput "bank account"
+money = matchtimeout 3, "Total"
+if money =~ /Total: (.*)/
+  silver = $1.to_i
+end
+
+fulldate = "#{day}, the #{date}#{suffix} of #{month}, #{year}. #{time}"
+fullgsdate = "#{gsday}, the #{date}#{suffix} of #{gsmonth}, #{gsyear}. #{time}"
+abbrevdate = "#{month_num}/#{date}/#{year}"
+
+UserVars.journal["today"]["exp"] = exp
+UserVars.journal["today"]["fame"] = fame
+UserVars.journal["today"]["bounty"] = bounty
+UserVars.journal["today"]["silver"] = silver
+
+if first
+  newexp = exp
+  newfame = fame
+  newbounty = bounty
+  newsilver = silver
+  first = false
+else
+  newexp = exp - oldexp
+  newfame = fame - oldfame
+  newbounty = bounty - oldbounty
+  newsilver = silver - oldsilver
+end
+
+if Room.current.id == resting_room
+  fput "get my #{pen}"
+  fput "get my #{book}"
+  fput "open my #{book}"
+  loop do
+    if earth
+      fput "write #{book}\; #{fulldate}. New Exp\: #{newexp}. New Fame\: #{newfame}. New Bounty Points\: #{newbounty}. Bank account\: #{newsilver}\|"
+    elsif abbreviate && !earth
+          fput "write #{book}\; #{abbrevdate}. New Exp\: #{newexp}. New Fame\: #{newfame}. New Bounty Points\: #{newbounty}. Bank account\: #{newsilver}\|"
+    else
+      fput "write #{book}\; #{fullgsdate}. New Exp\: #{newexp}. New Fame\: #{newfame}. New Bounty Points\: #{newbounty}. Bank account\: #{newsilver}\|"
+    end
+    written = matchtimeout 3, "You bend over your", "that will never fit"
+    if written =~ /that will never fit/
+      fput "turn page"
+      UserVars.journal["page"] += 1
+      fput "write #{book};Page #{UserVars.journal["page"]}\|\|\|"
+    elsif written =~ /You bend over your/
+      break
+    end
+  end
+  fput "stow my #{pen}"
+  fput "close my #{book}"
+  fput "stow my #{book}"
+  exit
+end
+
+  
+
+
+
